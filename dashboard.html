@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Party RSVP Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "DM Sans", sans-serif; background: #faf8f4; min-height: 100vh; color: #1a1a1a; }
+
+  header { background: #1a1a1a; color: #fff; padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-family: "Playfair Display", serif; font-weight: 400; font-size: 1.3rem; }
+  header span { font-size: 0.8rem; color: #888; }
+
+  .main { max-width: 860px; margin: 0 auto; padding: 2rem; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
+  .stat { background: #fff; border-radius: 12px; padding: 1.1rem 1.25rem; border: 1px solid #ede9e0; }
+  .stat-label { font-size: 0.75rem; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .stat-value { font-size: 1.9rem; font-weight: 500; }
+  .stat-value.green { color: #2d7a4f; }
+  .stat-value.red { color: #c0392b; }
+  .stat-value.blue { color: #2563a8; }
+
+  .tabs { display: flex; border-bottom: 1px solid #ede9e0; margin-bottom: 1.5rem; }
+  .tab { padding: 10px 20px; font-size: 0.9rem; color: #999; cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: "DM Sans", sans-serif; }
+  .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 500; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card { background: #fff; border-radius: 14px; border: 1px solid #ede9e0; overflow: hidden; margin-bottom: 1.5rem; }
+  .card-header { padding: 0.9rem 1.5rem; border-bottom: 1px solid #ede9e0; font-size: 0.85rem; font-weight: 500; color: #555; }
+
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 0.85rem; color: #666; margin-bottom: 5px; }
+  input, textarea { width: 100%; padding: 10px 14px; border: 1px solid #e0dbd0; border-radius: 10px; font-family: "DM Sans", sans-serif; font-size: 0.95rem; background: #faf8f4; color: #1a1a1a; outline: none; }
+  input:focus, textarea:focus { border-color: #aaa; background: #fff; }
+  textarea { min-height: 120px; resize: vertical; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-inner { padding: 1.5rem; }
+
+  .btn { padding: 10px 20px; border-radius: 50px; font-family: "DM Sans", sans-serif; font-size: 0.9rem; font-weight: 500; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #333; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { border-color: #aaa; background: #f5f5f5; }
+  .btn.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .btn.primary:hover { background: #333; }
+  .btn.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.small { padding: 6px 14px; font-size: 0.8rem; }
+
+  .notice { background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #7a5f00; margin-bottom: 1rem; line-height: 1.6; }
+
+  .guest-row { display: flex; align-items: center; gap: 12px; padding: 11px 1.5rem; border-bottom: 1px solid #f5f2ec; font-size: 0.88rem; }
+  .guest-row:last-child { border-bottom: none; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: #ede9e0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #888; flex-shrink: 0; }
+  .guest-name { flex: 1; font-weight: 500; }
+  .guest-email { flex: 1.5; color: #888; font-size: 0.82rem; }
+  .badge { font-size: 0.72rem; font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .badge.pending { background: #fef3c7; color: #92400e; }
+  .badge.attending { background: #d1fae5; color: #065f46; }
+  .badge.declined { background: #fee2e2; color: #991b1b; }
+
+  .result-row { display: flex; align-items: center; gap: 10px; padding: 10px 1.5rem; border-bottom: 1px solid #f5f2ec; font-size: 0.85rem; }
+  .result-row:last-child { border-bottom: none; }
+  .result-ok { color: #2d7a4f; font-weight: 700; }
+  .result-fail { color: #c0392b; font-weight: 700; }
+
+  .empty { padding: 2rem; text-align: center; color: #bbb; font-size: 0.9rem; }
+  .sending-msg { padding: 1.5rem; text-align: center; color: #888; font-size: 0.9rem; }
+
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 50px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 999; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌸 Party RSVP</h1>
+  <span>Cocktails — 12th September</span>
+</header>
+
+<div class="main">
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Invited</div><div class="stat-value" id="stat-total">—</div></div>
+    <div class="stat"><div class="stat-label">Attending</div><div class="stat-value green" id="stat-attending">—</div></div>
+    <div class="stat"><div class="stat-label">Declined</div><div class="stat-value red" id="stat-declined">—</div></div>
+    <div class="stat"><div class="stat-label">No reply</div><div class="stat-value blue" id="stat-pending">—</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('send')">Send Invitations</button>
+    <button class="tab" onclick="switchTab('responses')">Responses</button>
+    <button class="tab" onclick="switchTab('settings')">Party Details</button>
+  </div>
+
+  <!-- SEND TAB -->
+  <div id="panel-send" class="panel active">
+    <div class="card">
+      <div class="card-header">Guest list</div>
+      <div class="form-inner">
+        <div class="field">
+          <label>One guest per line: Name, email@address.com</label>
+          <textarea id="guest-paste" placeholder="Harry Brown, harrywbrown@outlook.com&#10;Jane Smith, jane@email.com&#10;Bob Jones, bob@email.com"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn primary" id="send-btn" onclick="sendInvitations()">✉️ Send invitations</button>
+          <span style="font-size:0.82rem;color:#bbb;">Emails sent from onboarding@resend.dev</span>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="send-results" style="display:none;">
+      <div class="card-header">Results</div>
+      <div id="send-results-list"></div>
+    </div>
+  </div>
+
+  <!-- RESPONSES TAB -->
+  <div id="panel-responses" class="panel">
+    <div style="display:flex;gap:10px;margin-bottom:1rem;align-items:center;">
+      <button class="btn primary" onclick="loadResponses()">↻ Load responses</button>
+      <span style="font-size:0.8rem;color:#bbb;" id="refresh-time"></span>
+    </div>
+    <div class="card">
+      <div id="response-list"><div class="empty">Click "Load responses" to see the latest RSVPs</div></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="panel-settings" class="panel">
+    <div class="card">
+      <div class="card-header">Party details</div>
+      <div class="form-inner">
+        <div class="field"><label>Party name</label><input id="s-name" value="Cocktails"></div>
+        <div class="field"><label>Subtitle</label><input id="s-subtitle" value="From 7 till late"></div>
+        <div class="row">
+          <div class="field"><label>Date</label><input type="date" id="s-date" value="2026-09-12"></div>
+          <div class="field"><label>Time</label><input type="time" id="s-time" value="19:00"></div>
+        </div>
+        <div class="field"><label>Location line 1</label><input id="s-loc1" value="8 Fulham Park Road"></div>
+        <div class="field"><label>Location line 2</label><input id="s-loc2" value="London SW6 4LH"></div>
+        <div class="field"><label>Dress code</label><input id="s-dress" value="Dress: Jackets"></div>
+        <div class="field"><label>RSVP deadline</label><input type="date" id="s-deadline" value="2026-09-05"></div>
+        <div class="field"><label>Your name</label><input id="s-host" value="Harry"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = "https://hjsqklvsigrscqbnqzg.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhqc3FrbHZzaWdyc2NxYm5xa3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTkxNTMsImV4cCI6MjA5NDU5NTE1M30.rtS8yCCW6ji7NdxxsFyjRlwbiuQBhPYnCAZltodHYtY";
+const RESEND_KEY = "re_SGgEJctq_QHpajiTrVHyDy2VgSp3Pztd9";
+const RSVP_BASE = "https://harrywb71.github.io/party-rsvp";
+
+function sv(id) { return document.getElementById(id).value.trim(); }
+
+function generateToken() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+}
+
+function fmtDate(d) {
+  if (!d) return "";
+  return new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+}
+function fmtTime(t) {
+  if (!t) return "";
+  const [h,m] = t.split(":");
+  const hr = parseInt(h);
+  return `${hr > 12 ? hr-12 : hr}:${m}${hr >= 12 ? "pm" : "am"}`;
+}
+function fmtDeadline(d) {
+  if (!d) return "";
+  return new Date(d + "T12:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"long" });
+}
+function initials(name) {
+  return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll(".tab").forEach((t,i) => t.classList.toggle("active", ["send","responses","settings"][i] === tab));
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.getElementById("panel-" + tab).classList.add("active");
+}
+
+async function saveGuest(name, email, token) {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/guests`, {
+      method: "POST",
+      headers: {
+        "apikey": SB_KEY,
+        "Authorization": `Bearer ${SB_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify({ name, email, token })
+    });
+    return res.ok || res.status === 409;
+  } catch(e) { return false; }
+}
+
+async function sendEmail(guest, party) {
+  const firstName = guest.name.split(" ")[0];
+  const yesUrl = `${RSVP_BASE}?token=${guest.token}&response=yes`;
+  const noUrl = `${RSVP_BASE}?token=${guest.token}&response=no`;
+
+  const html = `
+    <div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:2rem;background:#f9f8f5;">
+      <div style="background:#fff;padding:2.5rem;text-align:center;border:1px solid #e8e5de;">
+        <p style="font-size:0.75rem;letter-spacing:0.2em;color:#999;text-transform:uppercase;margin-bottom:1.5rem;">Please join us for</p>
+        <h1 style="font-size:2rem;font-weight:400;color:#1a1a1a;margin:0 0 0.5rem;">${party.name}</h1>
+        <p style="font-size:1.3rem;font-weight:400;color:#1a1a1a;margin:0 0 1.5rem;">${party.subtitle}</p>
+        <div style="width:28px;height:1px;background:#ccc;margin:0 auto 1.5rem;"></div>
+        <p style="font-size:0.8rem;letter-spacing:0.12em;color:#666;line-height:2.4;font-family:Georgia,serif;">
+          ${party.date}<br>${party.loc1}<br>${party.loc2}<br><br>${party.dress}
+        </p>
+        <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #e8e5de;">
+          <p style="font-size:0.7rem;letter-spacing:0.2em;color:#bbb;margin-bottom:1.5rem;font-family:Georgia,serif;">
+            ${firstName} — kindly reply
+          </p>
+          <table style="margin:0 auto;border-spacing:10px;">
+            <tr>
+              <td><a href="${yesUrl}" style="display:inline-block;padding:12px 28px;background:#1a1a1a;color:#fff;text-decoration:none;font-family:Georgia,serif;font-size:0.75rem;letter-spacing:0.15em;">I'll be there</a></td>
+              <td><a href="${noUrl}" style="display:inline-block;padding:12px 28px;border:1px solid #bbb;color:#888;text-decoration:none;font-family:Georgia,serif;font-size:0.75rem;letter-spacing:0.15em;">Can't make it</a></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${RESEND_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: "Party Invitation <onboarding@resend.dev>",
+      to: guest.email,
+      subject: `You're invited — ${party.name}`,
+      html
+    })
+  });
+  return res.ok || res.status === 200 || res.status === 201;
+}
+
+async function sendInvitations() {
+  const raw = document.getElementById("guest-paste").value.trim();
+  if (!raw) { showToast("Please enter your guest list first"); return; }
+
+  const lines = raw.split("\n").map(l => l.trim()).filter(l => l && l.includes(","));
+  const guests = lines.map(l => {
+    const idx = l.indexOf(",");
+    return { name: l.slice(0, idx).trim(), email: l.slice(idx+1).trim(), token: generateToken() };
+  }).filter(g => g.name && g.email.includes("@"));
+
+  if (!guests.length) { showToast("No valid guests — use: Name, email"); return; }
+
+  const party = {
+    name: sv("s-name"), subtitle: sv("s-subtitle"),
+    date: fmtDate(sv("s-date")), time: fmtTime(sv("s-time")),
+    loc1: sv("s-loc1"), loc2: sv("s-loc2"),
+    dress: sv("s-dress"), deadline: fmtDeadline(sv("s-deadline")),
+    host: sv("s-host")
+  };
+
+  const btn = document.getElementById("send-btn");
+  btn.disabled = true;
+  btn.textContent = `Sending to ${guests.length} guest${guests.length>1?"s":""}…`;
+
+  const resultsCard = document.getElementById("send-results");
+  const resultsList = document.getElementById("send-results-list");
+  resultsCard.style.display = "block";
+  resultsList.innerHTML = `<div class="sending-msg">Sending… please wait</div>`;
+
+  const results = [];
+  for (const guest of guests) {
+    const saved = await saveGuest(guest.name, guest.email, guest.token);
+    const sent = await sendEmail(guest, party);
+    results.push({ name: guest.name, saved, sent });
+  }
+
+  const succeeded = results.filter(r => r.sent).length;
+  resultsList.innerHTML = results.map(r => `
+    <div class="result-row">
+      <span class="${r.sent ? "result-ok" : "result-fail"}">${r.sent ? "✓" : "✗"}</span>
+      <span style="flex:1;font-weight:500;">${r.name}</span>
+      <span style="font-size:0.8rem;color:#999;">${r.sent ? "Email sent" : "Failed to send"}${!r.saved ? " (not saved to DB)" : ""}</span>
+    </div>
+  `).join("");
+
+  document.getElementById("stat-total").textContent = guests.length;
+  showToast(`${succeeded} of ${guests.length} sent!`);
+  btn.disabled = false;
+  btn.textContent = "✉️ Send invitations";
+}
+
+async function loadResponses() {
+  const list = document.getElementById("response-list");
+  list.innerHTML = "<div class='empty'>Loading…</div>";
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/guests?select=name,email,status,responded_at&order=created_at.asc`, {
+      headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` }
+    });
+    if (!res.ok) throw new Error("Status " + res.status);
+    const guests = await res.json();
+
+    document.getElementById("stat-total").textContent = guests.length;
+    document.getElementById("stat-attending").textContent = guests.filter(g=>g.status==="attending").length;
+    document.getElementById("stat-declined").textContent = guests.filter(g=>g.status==="declined").length;
+    document.getElementById("stat-pending").textContent = guests.filter(g=>g.status==="pending").length;
+
+    if (!guests.length) { list.innerHTML = "<div class='empty'>No guests yet</div>"; return; }
+
+    list.innerHTML = guests.map(g => `
+      <div class="guest-row">
+        <div class="avatar">${initials(g.name)}</div>
+        <span class="guest-name">${g.name}</span>
+        <span class="guest-email">${g.email}</span>
+        <span class="badge ${g.status}">${g.status}</span>
+      </div>
+    `).join("");
+
+    document.getElementById("refresh-time").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", {hour:"2-digit",minute:"2-digit"});
+  } catch(e) {
+    list.innerHTML = `<div class="empty">Could not load: ${e.message}</div>`;
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
+}
+</script>
+</body>
+</html>
