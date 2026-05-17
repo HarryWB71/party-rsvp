@@ -323,10 +323,7 @@ async function respond(r) {
 }
 
 async function init() {
-  // Auto-flip if there's a token (so guest lands on the details)
-  if (token) {
-    setTimeout(() => flip(), 600);
-  }
+
 
   if (!token) { showInvite(''); return; }
 
