@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSVP</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Cormorant+Garamond:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { margin: 0; background: #cdd5db; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .card { background: #f9f8f5; max-width: 360px; width: 100%; text-align: center; box-shadow: 0 8px 60px rgba(0,0,0,.13); overflow: hidden; }
+  .inner { padding: 2.5rem; }
+  h1 { font-family: 'Cormorant SC', serif; font-weight: 400; font-size: 1.7rem; color: #1c1c1c; margin: 0 0 2rem; }
+  .rule { width: 28px; height: 1px; background: #c8c4bc; margin: 0 auto 2rem; }
+  .note { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.05rem; color: #555; line-height: 1.7; }
+  .details { font-family: 'Cormorant SC', serif; font-weight: 300; font-size: .76rem; letter-spacing: .13em; color: #666; line-height: 2.3; margin-top: 1.5rem; }
+  .loading { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; color: #bbb; font-size: 1rem; padding: 2rem; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <img src="https://harrywb71.github.io/party-rsvp/gin.jpeg" style="width:100%;display:block;">
+  <div class="inner">
+    <p class="loading">One moment…</p>
+  </div>
+</div>
+
+<script>
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwBBasFIzfjoFAWzCA7hvKZWBIUFQxJMv6vCryUwHLQ9P84nlJC9GK6ei0Tawr7MUrb/exec';
+
+const params = new URLSearchParams(location.search);
+const token = params.get('token');
+const response = params.get('response');
+
+const PARTY_DATE = 'Saturday 12th September';
+const PARTY_TIME = '7pm';
+const PARTY_LOC1 = '8 Fulham Park Road';
+const PARTY_LOC2 = 'London SW6 4LH';
+const PARTY_DRESS = 'Dress: Jackets';
+
+function showYes() {
+  document.getElementById('card').innerHTML = `
+    <img src="https://harrywb71.github.io/party-rsvp/gin.jpeg" style="width:100%;display:block;">
+    <div class="inner">
+      <h1>How Wonderful</h1>
+      <div class="rule"></div>
+      <p class="note">We look forward to seeing you,<br>Catherine and Harry</p>
+      <div class="details">${PARTY_TIME}<br>${PARTY_DATE}<br>${PARTY_LOC1}<br>${PARTY_LOC2}<br><br>${PARTY_DRESS}</div>
+    </div>`;
+}
+
+function showNo() {
+  document.getElementById('card').innerHTML = `
+    <img src="https://harrywb71.github.io/party-rsvp/gin.jpeg" style="width:100%;display:block;">
+    <div class="inner">
+      <h1>Sorry To Miss You</h1>
+      <div class="rule"></div>
+      <p class="note" style="font-style:italic;color:#888;">We quite understand.<br>Perhaps another time.</p>
+    </div>`;
+}
+
+async function init() {
+  if (!token || !response) {
+    document.querySelector('.loading').textContent = 'Invalid link.';
+    return;
+  }
+
+  // Show confirmation immediately
+  if (response === 'yes') showYes(); else showNo();
+
+  // Call Apps Script in background to record the response
+  try {
+    await fetch(`${WEBAPP_URL}?token=${encodeURIComponent(token)}&response=${response}`, {
+      mode: 'no-cors'
+    });
+  } catch(e) {
+    // Silently fail
+  }
+}
+
+init();
+</script>
+</body>
+</html>
