@@ -323,25 +323,9 @@ async function respond(r) {
 }
 
 async function init() {
-  // Don't auto-flip - let guest click
-
   if (!token) { showInvite(''); return; }
-
-  const res = await fetch(`${SB}/rest/v1/guests?token=eq.${encodeURIComponent(token)}&select=name,status`, {
-    headers: { 'apikey': KEY, 'Authorization': `Bearer ${KEY}` }
-  });
-  const data = await res.json();
-  if (!data.length) { showInvite(''); return; }
-  _name = data[0].name;
-  const status = data[0].status;
-
-  if (autoResponse && status === 'pending') {
-    await respond(autoResponse);
-  } else if (status !== 'pending') {
-    showConfirm(_name, status);
-  } else {
-    showInvite(_name.split(' ')[0]);
-  }
+  if (autoResponse) { await respond(autoResponse); return; }
+  showInvite('');
 }
 
 init();
