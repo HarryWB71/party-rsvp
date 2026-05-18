@@ -4,19 +4,95 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RSVP</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Cormorant+Garamond:wght@300;400&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; background: #cdd5db; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { margin: 0; background: #cdd5db; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .card { background: #f9f8f5; max-width: 360px; width: 100%; text-align: center; box-shadow: 0 8px 60px rgba(0,0,0,.13); overflow: hidden; }
+  .inner { padding: 2.5rem; }
+  h1 { font-family: 'Cormorant SC', serif; font-weight: 400; font-size: 1.7rem; color: #1c1c1c; margin: 0 0 2rem; }
+  .rule { width: 28px; height: 1px; background: #c8c4bc; margin: 0 auto 2rem; }
+  .note { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.05rem; color: #555; line-height: 1.7; }
+  .details { font-family: 'Cormorant SC', serif; font-weight: 300; font-size: .76rem; letter-spacing: .13em; color: #666; line-height: 2.3; margin-top: 1.5rem; }
 </style>
 </head>
 <body>
+<div class="card" id="card">
+  <img src="https://harrywb71.github.io/party-rsvp/gin.jpeg" style="width:100%;display:block;">
+  <div class="inner">
+    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;color:#bbb;font-size:1rem;">One moment…</p>
+  </div>
+</div>
+
 <script>
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwBBasFIzfjoFAWzCA7hvKZWBIUFQxJMv6vCryUwHLQ9P84nlJC9GK6ei0Tawr7MUrb/exec';
+const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScwgQ_L-EZaV3cA_xEguyW5xJSEZvk3IKQq0IkfUPENAFq2bg/formResponse';
+const TOKEN_FIELD = 'entry.98600725';
+const RESPONSE_FIELD = 'entry.1075063339';
+
 const params = new URLSearchParams(location.search);
 const token = params.get('token');
 const response = params.get('response');
-if (token && response) {
-  window.location.href = WEBAPP_URL + '?token=' + encodeURIComponent(token) + '&response=' + response;
+
+const PARTY_TIME = '7pm';
+const PARTY_DATE = 'Saturday 12th September';
+const PARTY_LOC1 = '8 Fulham Park Road';
+const PARTY_LOC2 = 'London SW6 4LH';
+const PARTY_DRESS = 'Dress: Jackets';
+
+function showYes() {
+  document.getElementById('card').innerHTML = `
+    <img src="https://harrywb71.github.io/party-rsvp/gin.jpeg" style="width:100%;display:block;">
+    <div class="inner">
+      <h1>How Wonderful</h1>
+      <div class="rule"></div>
+      <p class="note">We look forward to seeing you!<br><br>Catherine and Harry</p>
+      <div class="details">${PARTY_TIME}<br>${PARTY_DATE}<br>${PARTY_LOC1}<br>${PARTY_LOC2}<br><br>${PARTY_DRESS}</div>
+    </div>`;
 }
+
+function showNo() {
+  document.getElementById('card').innerHTML = `
+    <img src="https://harrywb71.github.io/party-rsvp/gin.jpeg" style="width:100%;display:block;">
+    <div class="inner">
+      <h1>We'll Miss You!</h1>
+    </div>`;
+}
+
+async function init() {
+  if (!token || !response) {
+    document.querySelector('.inner p').textContent = 'Invalid link.';
+    return;
+  }
+
+  // Show confirmation immediately
+  if (response === 'yes') showYes(); else showNo();
+
+  // Submit to Google Form silently in background
+  try {
+    const formData = new FormData();
+    formData.append(TOKEN_FIELD, token);
+    formData.append(RESPONSE_FIELD, response);
+    await fetch(FORM_URL, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors'
+    });
+  } catch(e) {
+    // Silently fail — confirmation already shown
+  }
+
+  // Also notify Apps Script to update the sheet
+  try {
+    const WEBAPP = 'https://script.google.com/macros/s/AKfycbwBBasFIzfjoFAWzCA7hvKZWBIUFQxJMv6vCryUwHLQ9P84nlJC9GK6ei0Tawr7MUrb/exec';
+    await fetch(`${WEBAPP}?token=${encodeURIComponent(token)}&response=${response}`, {
+      mode: 'no-cors'
+    });
+  } catch(e) {
+    // Silently fail
+  }
+}
+
+init();
 </script>
 </body>
 </html>
