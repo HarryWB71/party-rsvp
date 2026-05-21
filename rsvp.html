@@ -13,7 +13,6 @@
   h1 { font-family: 'Cormorant SC', serif; font-weight: 400; font-size: 1.7rem; color: #1c1c1c; margin: 0 0 2rem; }
   .rule { width: 28px; height: 1px; background: #c8c4bc; margin: 0 auto 2rem; }
   .note { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.05rem; color: #555; line-height: 1.7; }
-  .details { font-family: 'Cormorant SC', serif; font-weight: 300; font-size: .76rem; letter-spacing: .13em; color: #666; line-height: 2.3; margin-top: 1.5rem; }
 </style>
 </head>
 <body>
@@ -25,28 +24,18 @@
 </div>
 
 <script>
-const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScwgQ_L-EZaV3cA_xEguyW5xJSEZvk3IKQq0IkfUPENAFq2bg/formResponse';
-const TOKEN_FIELD = 'entry.98600725';
-const RESPONSE_FIELD = 'entry.1075063339';
-
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwBBasFIzfjoFAWzCA7hvKZWBIUFQxJMv6vCryUwHLQ9P84nlJC9GK6ei0Tawr7MUrb/exec';
 const params = new URLSearchParams(location.search);
 const token = params.get('token');
 const response = params.get('response');
-
-const PARTY_TIME = '7pm';
-const PARTY_DATE = 'Saturday 12th September';
-const PARTY_LOC1 = '8 Fulham Park Road';
-const PARTY_LOC2 = 'London SW6 4LH';
-const PARTY_DRESS = 'Dress: Jackets';
 
 function showYes() {
   document.getElementById('card').innerHTML = `
     <img src="https://harrywb71.github.io/party-rsvp/gin.jpeg" style="width:100%;display:block;">
     <div class="inner">
-      <h1>How Wonderful</h1>
+      <h1>How Wonderful!</h1>
       <div class="rule"></div>
-      <p class="note">We look forward to seeing you!<br><br>Catherine and Harry</p>
-      <div class="details">${PARTY_TIME}<br>${PARTY_DATE}<br>${PARTY_LOC1}<br>${PARTY_LOC2}<br><br>${PARTY_DRESS}</div>
+      <p class="note">We look forward to seeing you<br><br>Catherine and Harry</p>
     </div>`;
 }
 
@@ -64,32 +53,24 @@ async function init() {
     return;
   }
 
-  // Show confirmation immediately
   if (response === 'yes') showYes(); else showNo();
 
-  // Submit to Google Form silently in background
   try {
     const formData = new FormData();
-    formData.append(TOKEN_FIELD, token);
-    formData.append(RESPONSE_FIELD, response);
-    await fetch(FORM_URL, {
+    formData.append('entry.98600725', token);
+    formData.append('entry.1075063339', response);
+    await fetch('https://docs.google.com/forms/d/e/1FAIpQLScwgQ_L-EZaV3cA_xEguyW5xJSEZvk3IKQq0IkfUPENAFq2bg/formResponse', {
       method: 'POST',
       body: formData,
       mode: 'no-cors'
     });
-  } catch(e) {
-    // Silently fail — confirmation already shown
-  }
+  } catch(e) {}
 
-  // Also notify Apps Script to update the sheet
   try {
-    const WEBAPP = 'https://script.google.com/macros/s/AKfycbwBBasFIzfjoFAWzCA7hvKZWBIUFQxJMv6vCryUwHLQ9P84nlJC9GK6ei0Tawr7MUrb/exec';
-    await fetch(`${WEBAPP}?token=${encodeURIComponent(token)}&response=${response}`, {
+    await fetch(`${WEBAPP_URL}?token=${encodeURIComponent(token)}&response=${response}`, {
       mode: 'no-cors'
     });
-  } catch(e) {
-    // Silently fail
-  }
+  } catch(e) {}
 }
 
 init();
